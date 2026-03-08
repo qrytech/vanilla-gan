@@ -83,3 +83,8 @@ vanilla-gan/
 ## References
 
 - Goodfellow, I. et al. — [Generative Adversarial Nets](https://arxiv.org/abs/1406.2661) (NeurIPS 2014)
+
+## Tips and Tricks that were used from the original paper
+
+- Change Generator Objective to maximize log D(G(z)) instead of minimizing log(1-D(G(z)) to counter saturated gradients.
+- Use Dropout at intermediate layers
