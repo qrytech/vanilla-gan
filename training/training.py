@@ -7,7 +7,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from model.Discriminator import Discriminator
 from model.Generator import Generator
-
+import torch.nn as nn
 
 input_path = 'data\MNIST'
 training_images_filepath = join(input_path, 'train-images-idx3-ubyte/train-images-idx3-ubyte')
@@ -16,8 +16,8 @@ test_images_filepath = join(input_path, 't10k-images-idx3-ubyte/t10k-images-idx3
 test_labels_filepath = join(input_path, 't10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte')
 
 
-latent_dim = 128
-num_epochs = 10
+latent_dim = 256
+num_epochs = 50
 k=1
 batch_size = 64
 
@@ -44,11 +44,20 @@ loader = DataLoader(
 )
 
 
-
+eps = 1e-8
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 discriminator = Discriminator().to(device)
 generator = Generator(latent_dim=latent_dim).to(device)
+criterion = nn.BCELoss()
+def weights_init(m):
+    if isinstance(m, nn.Linear):
+        nn.init.normal_(m.weight, 0.0, 0.02)
+        nn.init.zeros_(m.bias)
+
+generator.apply(weights_init)
+discriminator.apply(weights_init)
+
 
 optimizer_g = torch.optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 optimizer_d = torch.optim.Adam(discriminator.parameters(), lr=0.0001, betas=(0.5, 0.999))
@@ -68,7 +77,11 @@ for epoch in range(num_epochs):
 
 
 
-    loss_d = -(torch.log(real_scores) + torch.log(0.9 - fake_scores)).mean()
+    #loss_d = -(torch.log(real_scores +eps) + torch.log(1 - fake_scores + eps)).mean()
+    loss_real = loss_real = criterion(real_scores, torch.ones_like(real_scores) * 0.9)
+    loss_fake = criterion(fake_scores, torch.zeros_like(fake_scores))
+    loss_d = loss_real + loss_fake
+
 
     loss_d.backward()         
     optimizer_d.step()        
@@ -77,7 +90,8 @@ for epoch in range(num_epochs):
     latent_vectors = torch.randn(real_images.size(0), latent_dim).to(device)
     fake_images = generator(latent_vectors)
     fake_scores = discriminator(fake_images)
-    loss_g = -(torch.log(fake_scores)).mean()
+    #loss_g = -(torch.log(fake_scores +eps)).mean()
+    loss_g = criterion(fake_scores, torch.ones_like(fake_scores))
     loss_g.backward()
     optimizer_g.step()
 
