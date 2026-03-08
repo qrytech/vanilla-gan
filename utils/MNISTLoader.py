@@ -8,6 +8,28 @@ from os.path  import join
 #
 # MNIST Data Loader Class
 #
+
+class MNISTDataSet():
+
+    def __init__(self, x_train, y_train, transform = None):
+        self.x_train = x_train
+        self.y_train =  y_train
+        self.transform = transform
+
+
+    def __len__(self):
+        return len(self.x_train)
+    
+
+    def __getitem__(self, key):
+        image = self.x_train[key]
+        label = self.y_train[key]
+        if self.transform:
+            image = self.transform(image)
+        return image, label
+
+
+
 class MnistDataloader(object):
     def __init__(self, training_images_filepath,training_labels_filepath,
                  test_images_filepath, test_labels_filepath):
@@ -31,18 +53,18 @@ class MnistDataloader(object):
             image_data = array("B", file.read())        
         images = []
         for i in range(size):
-            images.append([0] * rows * cols)
-        for i in range(size):
             img = np.array(image_data[i * rows * cols:(i + 1) * rows * cols])
-            img = img.reshape(28, 28)
-            images[i][:] = img            
-        
+            img = img.reshape(28, 28).astype(np.uint8)
+            images.append(img)
         return images, labels
             
     def load_data(self):
         x_train, y_train = self.read_images_labels(self.training_images_filepath, self.training_labels_filepath)
         x_test, y_test = self.read_images_labels(self.test_images_filepath, self.test_labels_filepath)
         return (x_train, y_train),(x_test, y_test)        
+
+
+
 
 
 
